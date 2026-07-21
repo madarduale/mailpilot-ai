@@ -1,0 +1,57 @@
+name: Backend CI
+
+on:
+  push:
+    paths:
+      - "backend/**"
+      - "infrastructure/**"
+      - "compose.yaml"
+      - ".github/workflows/backend-ci.yml"
+  pull_request:
+    paths:
+      - "backend/**"
+      - "infrastructure/**"
+      - "compose.yaml"
+      - ".github/workflows/backend-ci.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backend-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+      - name: Install backend with development tools
+        run: python -m pip install -e ".[dev]"
+      - name: Lint
+        run: ruff check .
+      - name: Type check
+        run: mypy apps config
+      - name: Test
+        run: pytest --cov=apps --cov-report=term-missing --cov-fail-under=80
+      - name: Validate Django configuration
+        run: python manage.py check --settings=config.settings.test
+      - name: Validate OpenAPI schema
+        run: python manage.py spectacular --settings=config.settings.test --file schema.yml --validate
+
+  container:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate Compose configuration
+        run: docker compose config --quiet
+      - name: Build production backend image
+        run: docker build --target runtime --file infrastructure/docker/backend/Dockerfile backend

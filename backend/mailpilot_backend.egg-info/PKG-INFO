@@ -1,0 +1,34 @@
+Metadata-Version: 2.4
+Name: mailpilot-backend
+Version: 0.1.0
+Summary: MailPilot AI backend
+Requires-Python: >=3.12
+Requires-Dist: Django<5.3,>=5.2
+Requires-Dist: djangorestframework<3.17,>=3.16
+Requires-Dist: djangorestframework-simplejwt<6,>=5.5
+Requires-Dist: django-environ<0.13,>=0.12
+Requires-Dist: django-filter<26,>=25.1
+Requires-Dist: django-cors-headers<5,>=4.7
+Requires-Dist: drf-spectacular<0.29,>=0.28
+Requires-Dist: channels[daphne]<5,>=4.2
+Requires-Dist: channels-redis<5,>=4.2
+Requires-Dist: celery[redis]<6,>=5.5
+Requires-Dist: psycopg[binary,pool]<4,>=3.2
+Requires-Dist: whitenoise[brotli]<7,>=6.9
+Requires-Dist: cryptography<46,>=44
+Requires-Dist: google-api-python-client<3,>=2.170
+Requires-Dist: google-auth<3,>=2.40
+Requires-Dist: google-auth-oauthlib<2,>=1.2
+Requires-Dist: google-auth-httplib2<1,>=0.2
+Requires-Dist: openai<3,>=1.82
+Requires-Dist: httpx<1,>=0.27
+Requires-Dist: gunicorn<24,>=23
+Provides-Extra: dev
+Requires-Dist: coverage[toml]<8,>=7.8; extra == "dev"
+Requires-Dist: django-stubs[compatible-mypy]<6,>=5.2; extra == "dev"
+Requires-Dist: djangorestframework-stubs[compatible-mypy]<4,>=3.16; extra == "dev"
+Requires-Dist: factory-boy<4,>=3.3; extra == "dev"
+Requires-Dist: mypy<2,>=1.15; extra == "dev"
+Requires-Dist: pytest<9,>=8.3; extra == "dev"
+Requires-Dist: pytest-django<5,>=4.11; extra == "dev"
+Requires-Dist: ruff<1,>=0.11; extra == "dev"
