@@ -35,9 +35,9 @@ Thumbs.db
 .docker-data/
 
 
-.file.txt/
-file.txt/
-file.txt
-./file.txt
+# .file.txt/
+# file.txt/
+# file.txt
+# ./file.txt
 
-file.txt
+# file.txt

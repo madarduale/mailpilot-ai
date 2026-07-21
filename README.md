@@ -159,7 +159,7 @@ README.md
 ## Clone Repository
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/mailpilot-ai.git
+git clone https://github.com/madarduale/mailpilot-ai.git
 
 cd mailpilot-ai
 ```
