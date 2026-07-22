@@ -5,10 +5,7 @@ import logging
 from dataclasses import dataclass
 from typing import BinaryIO
 
-from django.core.files.base import ContentFile
-from django.core.files.storage import default_storage
 from django.utils import timezone
-from openai import OpenAIError
 
 from apps.accounts.models import User
 from apps.preferences.models import UserPreference
@@ -86,18 +83,10 @@ class VoiceAssistantService:
                 input_text=self._response_input(transcript, briefing.narrative, conversation),
                 safety_identifier=hashlib.sha256(str(user.uuid).encode()).hexdigest(),
             )
-        preferences, _ = UserPreference.objects.get_or_create(user=user)
+        # Speech is intentionally synthesized on-device by Expo Speech. This keeps
+        # floating-assistant voice responsive and avoids retaining generated audio.
+        UserPreference.objects.get_or_create(user=user)
         audio_path: str | None = None
-        try:
-            audio_bytes = self.gateway.synthesize(text=response_text, voice=preferences.tts_voice)
-            audio_path = default_storage.save(
-                f"voice/responses/{conversation.uuid}/{timezone.now().timestamp()}.mp3",
-                ContentFile(audio_bytes),
-            )
-        except OpenAIError:
-            # OpenRouter TTS availability varies by model/account. Preserve the
-            # text turn so the client can fall back to native device speech.
-            logger.warning("Voice synthesis unavailable; returning text response", exc_info=True)
         conversation.messages = [
             *conversation.messages,
             {"role": "user", "content": transcript, "created_at": timezone.now().isoformat()},

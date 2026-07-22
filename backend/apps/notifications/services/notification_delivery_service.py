@@ -1,8 +1,10 @@
 from __future__ import annotations
 
-from django.utils import timezone
 import logging
 
+from django.utils import timezone
+
+from apps.emails.models import Email
 from apps.notifications.integrations import ExpoPushGateway
 from apps.notifications.models import Notification, NotificationStatus, PushDevice
 
@@ -24,7 +26,10 @@ class NotificationDeliveryService:
             ).values_list("token", flat=True)[:100]
         )
         if not tokens:
-            logger.info("Notification skipped", extra={"notification_uuid": str(notification.uuid), "reason": "no_active_devices"})
+            logger.info(
+                "Notification skipped",
+                extra={"notification_uuid": str(notification.uuid), "reason": "no_active_devices"},
+            )
             return notification
         tickets = self.gateway.send(
             [
@@ -33,6 +38,9 @@ class NotificationDeliveryService:
                     "sound": "default",
                     "priority": "high",
                     "channelId": "important-email",
+                    "badge": Email.objects.filter(
+                        account__user=notification.user, is_read=False
+                    ).count(),
                     "title": notification.title,
                     "body": notification.body,
                     "data": notification.data,
@@ -44,16 +52,24 @@ class NotificationDeliveryService:
         if errors:
             notification.status = NotificationStatus.FAILED
             notification.failure_reason = "; ".join(
-                str(ticket.get("message", "Expo rejected the notification."))
-                for ticket in errors
+                str(ticket.get("message", "Expo rejected the notification.")) for ticket in errors
             )[:2000]
-            logger.warning("Notification failed", extra={"notification_uuid": str(notification.uuid), "reason": notification.failure_reason})
+            logger.warning(
+                "Notification failed",
+                extra={
+                    "notification_uuid": str(notification.uuid),
+                    "reason": notification.failure_reason,
+                },
+            )
         else:
             notification.status = NotificationStatus.SENT
             notification.sent_at = timezone.now()
             ticket_ids = [str(ticket["id"]) for ticket in tickets if ticket.get("id")]
             notification.provider_message_id = ",".join(ticket_ids)[:255]
-            logger.info("Notification sent", extra={"notification_uuid": str(notification.uuid), "device_count": len(tokens)})
+            logger.info(
+                "Notification sent",
+                extra={"notification_uuid": str(notification.uuid), "device_count": len(tokens)},
+            )
         notification.save(
             update_fields=(
                 "status",

@@ -14,10 +14,10 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.email_accounts.integrations.gmail.client import GmailClientFactory
 from apps.emails.filters import EmailFilter
 from apps.emails.models import Email
 from apps.emails.serializers import EmailDetailSerializer, EmailListSerializer
-from apps.email_accounts.integrations.gmail.client import GmailClientFactory
 from apps.intelligence.serializers.email_analysis import AISummarySerializer
 
 
@@ -80,6 +80,35 @@ class EmailReadView(APIView):
             email.is_read = True
             email.save(update_fields=("is_read", "updated_at"))
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class EmailDoneView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    @extend_schema(
+        tags=("Emails",),
+        operation_id="emails_set_done",
+        summary="Mark an email as done or not done",
+        request={
+            "application/json": {
+                "type": "object",
+                "properties": {"is_done": {"type": "boolean"}},
+                "required": ["is_done"],
+            }
+        },
+        responses={200: EmailListSerializer, 404: OpenApiResponse(description="Email not found")},
+    )
+    def post(self, request: Request, email_uuid: str) -> Response:
+        email = generics.get_object_or_404(user_emails(request), uuid=email_uuid)
+        value = request.data.get("is_done")
+        if not isinstance(value, bool):
+            return Response(
+                {"is_done": ["This field must be a boolean."]}, status=status.HTTP_400_BAD_REQUEST
+            )
+        if email.is_done != value:
+            email.is_done = value
+            email.save(update_fields=("is_done", "updated_at"))
+        return Response(EmailListSerializer(email).data)
 
 
 class EmailAttachmentDownloadView(APIView):

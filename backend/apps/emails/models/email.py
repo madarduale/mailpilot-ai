@@ -28,6 +28,7 @@ class Email(UUIDTimestampedModel):
     received_at = models.DateTimeField(db_index=True)
     attachments = models.JSONField(default=list, blank=True)
     is_read = models.BooleanField(default=False, db_index=True)
+    is_done = models.BooleanField(default=False, db_index=True)
     is_starred = models.BooleanField(default=False)
     is_draft = models.BooleanField(default=False)
     labels = models.JSONField(default=list, blank=True)

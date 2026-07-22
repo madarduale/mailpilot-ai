@@ -127,6 +127,7 @@ def test_dashboard_returns_thresholded_user_scoped_data() -> None:
     body = response.json()
     assert body["stats"] == {"important": 1, "action_required": 1, "unread": 2}
     assert body["unread_notifications"] == 1
+    assert body["unread_emails"] == 3
     assert len(body["important_emails"]) == 1
     assert body["important_emails"][0]["uuid"] == str(important.uuid)
     assert body["important_emails"][0]["ai_summary"]["importance_score"] == 92
@@ -154,4 +155,5 @@ def test_dashboard_uses_safe_defaults_without_preferences_or_messages() -> None:
         "important_emails": [],
         "reminders": [],
         "unread_notifications": 0,
+        "unread_emails": 0,
     }

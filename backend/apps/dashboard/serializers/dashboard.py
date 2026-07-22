@@ -41,6 +41,7 @@ class DashboardEmailSerializer(serializers.ModelSerializer[Email]):
             "sender_name",
             "received_at",
             "is_read",
+            "is_done",
             "ai_summary",
         )
 
@@ -63,3 +64,4 @@ class DashboardResponseSerializer(serializers.Serializer[Any]):
     important_emails = DashboardEmailSerializer(many=True)
     reminders = DashboardReminderSerializer(many=True)
     unread_notifications = serializers.IntegerField(min_value=0)
+    unread_emails = serializers.IntegerField(min_value=0)

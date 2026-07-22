@@ -57,3 +57,26 @@ def test_email_endpoints_are_user_scoped_and_can_mark_read() -> None:
     assert response.status_code == status.HTTP_204_NO_CONTENT
     email.refresh_from_db()
     assert email.is_read is True
+
+
+def test_email_can_be_marked_done_and_restored() -> None:
+    owner = User.objects.create_user(email="done-owner@example.com")
+    email = make_email(owner, "done-owner")
+    client = APIClient()
+    client.force_authenticate(owner)
+
+    done = client.post(
+        reverse("v1:emails:done", kwargs={"email_uuid": email.uuid}),
+        {"is_done": True},
+        format="json",
+    )
+    restored = client.post(
+        reverse("v1:emails:done", kwargs={"email_uuid": email.uuid}),
+        {"is_done": False},
+        format="json",
+    )
+
+    assert done.status_code == status.HTTP_200_OK
+    assert done.data["is_done"] is True
+    assert restored.status_code == status.HTTP_200_OK
+    assert restored.data["is_done"] is False

@@ -3,13 +3,12 @@ from __future__ import annotations
 from io import BytesIO
 
 import pytest
-from openai import OpenAIError
+from django.utils import timezone
 
 from apps.accounts.models import User
+from apps.reminders.models import Reminder
 from apps.voice.models import VoiceConversation
 from apps.voice.services import VoiceAssistantService
-from apps.reminders.models import Reminder
-from django.utils import timezone
 
 pytestmark = pytest.mark.django_db
 
@@ -34,11 +33,6 @@ class FakeVoiceGateway:
         return b"fake-mp3"
 
 
-class FailingTTSGateway(FakeVoiceGateway):
-    def synthesize(self, *, text: str, voice: str) -> bytes:
-        raise OpenAIError("TTS unavailable")
-
-
 def test_greeting_returns_proactive_briefing_without_model_response() -> None:
     user = User.objects.create_user(email="voice-greeting@example.com")
     gateway = FakeVoiceGateway(["Good morning"])
@@ -56,17 +50,25 @@ def test_greeting_returns_proactive_briefing_without_model_response() -> None:
     assert result.response_text.startswith(("Good morning.", "Good afternoon.", "Good evening."))
     assert "Would you like me to summarize everything?" in result.response_text
     assert gateway.response_calls == 0
-    assert result.response_audio_path is not None
-    assert VoiceConversation.objects.get(uuid=result.conversation.uuid).messages[-1][
-        "role"
-    ] == "assistant"
+    assert result.response_audio_path is None
+    assert gateway.speech == []
+    assert (
+        VoiceConversation.objects.get(uuid=result.conversation.uuid).messages[-1]["role"]
+        == "assistant"
+    )
 
 
 def test_greeting_summary_includes_due_reminders() -> None:
     user = User.objects.create_user(email="voice-reminder@example.com")
     Reminder.objects.create(user=user, title="Interview", due_at=timezone.now())
     gateway = FakeVoiceGateway(["Good morning"])
-    result = VoiceAssistantService(gateway=gateway).process_turn(user=user, audio_file=BytesIO(b"audio"), filename="voice.m4a", content_type="audio/mp4", language="en")  # type: ignore[arg-type]
+    result = VoiceAssistantService(gateway=gateway).process_turn(
+        user=user,
+        audio_file=BytesIO(b"audio"),
+        filename="voice.m4a",
+        content_type="audio/mp4",
+        language="en",
+    )  # type: ignore[arg-type]
     assert "Interview" in result.response_text
 
 
@@ -98,9 +100,9 @@ def test_followup_uses_conversation_history_and_responses_gateway() -> None:
     assert len(second.conversation.messages) == 4
 
 
-def test_tts_failure_keeps_voice_turn_successful() -> None:
-    user = User.objects.create_user(email="voice-tts-fallback@example.com")
-    gateway = FailingTTSGateway(["Good morning"])
+def test_voice_turn_uses_client_side_tts() -> None:
+    user = User.objects.create_user(email="voice-client-tts@example.com")
+    gateway = FakeVoiceGateway(["Good morning"])
 
     result = VoiceAssistantService(gateway=gateway).process_turn(
         user=user,
@@ -112,4 +114,5 @@ def test_tts_failure_keeps_voice_turn_successful() -> None:
 
     assert result.response_text
     assert result.response_audio_path is None
+    assert gateway.speech == []
     assert VoiceConversation.objects.filter(uuid=result.conversation.uuid).exists()

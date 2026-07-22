@@ -20,6 +20,7 @@ class DashboardResult:
     important_emails: list[Email]
     reminders: list[Reminder]
     unread_notifications: int
+    unread_emails: int
 
 
 class DashboardService:
@@ -41,8 +42,7 @@ class DashboardService:
         action_required = stats["action_required"]
         if important == 0 and action_required == 0:
             return (
-                "Your priority inbox is clear today. "
-                "MailPilot will keep watching for what matters."
+                "Your priority inbox is clear today. MailPilot will keep watching for what matters."
             )
 
         important_label = "email" if important == 1 else "emails"
@@ -80,4 +80,5 @@ class DashboardService:
             ),
             reminders=self.repository.list_upcoming_reminders(user),
             unread_notifications=self.repository.count_unread_notifications(user),
+            unread_emails=self.repository.count_unread_emails(user),
         )

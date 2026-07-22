@@ -52,6 +52,7 @@ class DashboardRepository:
     ) -> DashboardStats:
         values = Email.objects.filter(
             account__user=user,
+            is_done=False,
             received_at__gte=start,
             received_at__lt=end,
         ).aggregate(
@@ -82,6 +83,7 @@ class DashboardRepository:
                 received_at__gte=start,
                 received_at__lt=end,
                 ai_summary__importance_score__gt=importance_threshold,
+                is_done=False,
             )
             .select_related("ai_summary__category")
             .order_by("-ai_summary__importance_score", "-received_at")
@@ -103,3 +105,7 @@ class DashboardRepository:
             .exclude(status__in=(NotificationStatus.READ, NotificationStatus.FAILED))
             .count()
         )
+
+    @staticmethod
+    def count_unread_emails(user: User) -> int:
+        return Email.objects.filter(account__user=user, is_read=False).count()
